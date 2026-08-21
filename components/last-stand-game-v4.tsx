@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type Enemy={id:number;x:number;hp:number;maxHp:number;speed:number;kind:"grunt"|"runner"|"brute"};
+type Enemy={id:number;x:number;y:number;hp:number;maxHp:number;speed:number;kind:"grunt"|"runner"|"brute"};
 type Shot={id:number;x:number;y:number;vx:number;vy:number;damage:number};
 type Upgrade="damage"|"ammo"|"medic"|"support";
 
@@ -17,7 +17,7 @@ const upgrades:Record<Upgrade,{title:string;description:string}>={
 export default function LastStandGameV4(){
  const [running,setRunning]=useState(false),[hp,setHp]=useState(100),[ammo,setAmmo]=useState(BASE_AMMO),[maxAmmo,setMaxAmmo]=useState(BASE_AMMO),[cash,setCash]=useState(120),[wave,setWave]=useState(1),[kills,setKills]=useState(0),[damage,setDamage]=useState(1),[support,setSupport]=useState(0),[playerX,setPlayerX]=useState(180),[aim,setAim]=useState(55),[enemies,setEnemies]=useState<Enemy[]>([]),[shots,setShots]=useState<Shot[]>([]),[intermission,setIntermission]=useState(false),[countdown,setCountdown]=useState(0),[flash,setFlash]=useState(false),[hitFlash,setHitFlash]=useState(false);
  const nextId=useRef(1),keys=useRef(new Set<string>());
- const realSpawn=useCallback((n:number)=>{const count=Math.min(5+n*2,22);setEnemies(Array.from({length:count},(_,i)=>{const r=Math.random();const kind:Enemy["kind"]=n>=4&&r>.9?"brute":r>.78?"runner":"grunt";const baseHp=kind==="brute"?4+Math.floor(n/3):1+Math.floor(n/5);return{id:nextId.current++,x:W+80+i*70+Math.random()*120,hp:baseHp,maxHp:baseHp,speed:kind==="brute"?.32+n*.012:kind==="runner"?1+n*.04:.55+Math.random()*.45+n*.025,kind};}));},[]);
+ const realSpawn=useCallback((n:number)=>{const count=Math.min(5+n*2,22);setEnemies(Array.from({length:count},(_,i)=>{const r=Math.random();const kind:Enemy["kind"]=n>=4&&r>.9?"brute":r>.78?"runner":"grunt";const baseHp=kind==="brute"?4+Math.floor(n/3):1+Math.floor(n/5);return{id:nextId.current++,x:W+80+i*70+Math.random()*120,y:420,hp:baseHp,maxHp:baseHp,speed:kind==="brute"?.32+n*.012:kind==="runner"?1+n*.04:.55+Math.random()*.45+n*.025,kind};}));},[]);
  const start=()=>{setRunning(true);setHp(100);setAmmo(BASE_AMMO);setMaxAmmo(BASE_AMMO);setCash(120);setWave(1);setKills(0);setDamage(1);setSupport(0);setPlayerX(180);setIntermission(false);setCountdown(0);setShots([]);realSpawn(1);};
  const shoot=useCallback(()=>{if(!running||intermission||ammo<=0)return;const angle=(aim/100)*Math.PI*.55-.275;setAmmo(a=>a-1);setShots(s=>[...s,{id:nextId.current++,x:playerX+34,y:420,vx:Math.cos(angle)*34,vy:-Math.sin(angle)*34,damage}]);setFlash(true);window.setTimeout(()=>setFlash(false),60);},[aim,ammo,damage,intermission,playerX,running]);
  const reload=useCallback(()=>{if(running&&!intermission)setAmmo(maxAmmo)},[intermission,maxAmmo,running]);
