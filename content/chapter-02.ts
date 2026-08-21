@@ -1,0 +1,1 @@
+export const chapterTwo = { title: "One More Room", protagonist: "Mara Vale", objective: "Reach Relay 9", loop: ["enter", "fight", "upgrade", "push deeper"], enemies: ["runner", "grunt", "brute"], upgrades: ["hotter rounds", "field medic", "extra magazines"], finale: "Relay 9 is not abandoned. Someone answers Mara's arrival." } as const;
