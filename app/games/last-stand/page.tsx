@@ -1,4 +1,36 @@
-"use client";
 import Link from "next/link";
-import { useState } from "react";
-export default function LastStand(){const [started,setStarted]=useState(false); return <main className="min-h-screen bg-[#111] px-4 py-6"><div className="mx-auto max-w-5xl"><header className="flex justify-between"><Link href="/" className="text-xs font-black uppercase tracking-[.2em]">Small Game Lab.</Link><span className="text-xs uppercase tracking-widest text-zinc-600">GAME 001 · PROTOTYPE</span></header><section className="mt-8 overflow-hidden border border-zinc-800 bg-[#090909]"><div className="relative aspect-[16/9] bg-[radial-gradient(circle_at_70%_45%,#343434,transparent_28%),linear-gradient(#151515,#090909)]"><div className="absolute inset-x-0 bottom-0 h-1/3 border-t border-zinc-800 bg-black/30"/><div className="absolute bottom-[18%] left-[18%] h-16 w-5 bg-orange-500"/><div className="absolute bottom-[18%] left-[18%] h-5 w-20 -translate-x-1/2 bg-orange-500/70"/><div className="absolute right-[14%] bottom-[18%] h-8 w-8 rounded-full bg-zinc-600"/><div className="absolute left-6 top-6"><div className="text-xs font-bold uppercase tracking-widest text-zinc-500">WAVE 01</div><div className="mt-2 text-3xl font-black">LAST STAND</div></div>{!started&&<div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"><button onClick={()=>setStarted(true)} className="bg-orange-500 px-10 py-5 text-sm font-black uppercase tracking-widest text-black hover:bg-orange-400">Start Prototype</button></div>}{started&&<div className="absolute bottom-6 left-6 right-6 flex justify-between text-xs font-bold uppercase tracking-widest"><span>HP 100</span><span>AMMO 12 / 60</span><span>$120</span></div>}</div><div className="flex flex-col gap-3 border-t border-zinc-800 p-6 md:flex-row md:items-center md:justify-between"><div><h1 className="text-xl font-black">LAST STAND</h1><p className="mt-1 text-sm text-zinc-500">The first Small Game Lab experiment.</p></div><span className="text-xs uppercase tracking-widest text-zinc-600">Playable shell · v0.1</span></div></section></div></main>}
+import LastStandGame from "../../../components/last-stand-game";
+
+export default function LastStandPage() {
+  return (
+    <main className="min-h-screen bg-[#090909] px-4 py-6 text-[#f5f2ea] md:px-8">
+      <div className="mx-auto max-w-6xl">
+        <header className="flex items-center justify-between">
+          <Link href="/" className="text-xs font-black uppercase tracking-[0.22em]">Small Game Lab.</Link>
+          <Link href="/games" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white">All games →</Link>
+        </header>
+
+        <section className="mx-auto mt-10 max-w-5xl">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">GAME 001 · EARLY BUILD</p>
+              <h1 className="mt-2 text-5xl font-black uppercase tracking-[-0.04em] md:text-7xl">Last Stand.</h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">One soldier. One position. One more wave. This is the first real Small Game Lab experiment.</p>
+            </div>
+            <div className="text-left text-[10px] font-black uppercase tracking-[0.18em] text-zinc-600 md:text-right">
+              Build 0.2<br />Core loop online
+            </div>
+          </div>
+
+          <LastStandGame />
+
+          <div className="mt-8 grid gap-px overflow-hidden border border-zinc-800 bg-zinc-800 md:grid-cols-3">
+            <div className="bg-[#0d0d0d] p-5"><p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">01</p><h2 className="mt-2 font-black uppercase">Survive</h2><p className="mt-2 text-sm text-zinc-500">Enemies get faster and tougher every wave.</p></div>
+            <div className="bg-[#0d0d0d] p-5"><p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">02</p><h2 className="mt-2 font-black uppercase">Earn</h2><p className="mt-2 text-sm text-zinc-500">Every kill pays. The better you play, the longer you last.</p></div>
+            <div className="bg-[#0d0d0d] p-5"><p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">03</p><h2 className="mt-2 font-black uppercase">Upgrade</h2><p className="mt-2 text-sm text-zinc-500">Upgrades, support troops and bosses are next.</p></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
