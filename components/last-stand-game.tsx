@@ -147,22 +147,9 @@ export default function LastStandGame() {
   useEffect(() => {
     if (!running || intermission || enemies.length > 0) return;
     setIntermission(true);
-    const timeout = window.setTimeout(() => {
-      setWave((current) => current + 1);
-    }, 800);
+    const timeout = window.setTimeout(() => setWave((current) => current + 1), 800);
     return () => window.clearTimeout(timeout);
   }, [enemies.length, intermission, running]);
-
-  useEffect(() => {
-    if (!running || !intermission) return;
-    const nextWave = wave + 1;
-    if (wave === 1) return;
-    const timeout = window.setTimeout(() => {
-      setIntermission(false);
-      spawnWave(wave);
-    }, 900);
-    return () => window.clearTimeout(timeout);
-  }, [intermission, running, spawnWave, wave]);
 
   useEffect(() => {
     if (hp > 0) return;
@@ -203,7 +190,7 @@ export default function LastStandGame() {
         {enemies.map((enemy) => (
           <div
             key={enemy.id}
-            className={`absolute bottom-[22%] h-7 rounded-sm transition-transform ${enemy.kind === "runner" ? "h-6 w-5 bg-red-400" : enemy.kind === "brute" ? "h-11 w-11 bg-red-700" : "w-7 bg-zinc-500"}`}
+            className={`absolute bottom-[22%] h-7 rounded-sm ${enemy.kind === "runner" ? "h-6 w-5 bg-red-400" : enemy.kind === "brute" ? "h-11 w-11 bg-red-700" : "w-7 bg-zinc-500"}`}
             style={{ left: `${(enemy.x / WIDTH) * 100}%` }}
           >
             <div className="absolute -top-2 left-0 h-1 w-full bg-zinc-800">
@@ -212,11 +199,7 @@ export default function LastStandGame() {
           </div>
         ))}
         {shots.map((shot) => (
-          <div
-            key={shot.id}
-            className="absolute h-1 w-8 bg-yellow-300 shadow-[0_0_10px_rgba(253,224,71,.8)]"
-            style={{ left: `${(shot.x / WIDTH) * 100}%`, bottom: "26%" }}
-          />
+          <div key={shot.id} className="absolute h-1 w-8 bg-yellow-300 shadow-[0_0_10px_rgba(253,224,71,.8)]" style={{ left: `${(shot.x / WIDTH) * 100}%`, bottom: "26%" }} />
         ))}
         {flash && <div className="absolute bottom-[24%] left-[22%] h-4 w-10 rounded-full bg-yellow-200 blur-sm" />}
         {hitFlash && <div className="pointer-events-none absolute inset-0 bg-red-500/15" />}
@@ -231,11 +214,7 @@ export default function LastStandGame() {
               <h2 className="mt-2 text-3xl font-black uppercase tracking-tight md:text-5xl">Choose your edge.</h2>
               <div className="mt-6 grid gap-3 md:grid-cols-3">
                 {(Object.keys(upgrades) as Upgrade[]).map((key) => (
-                  <button
-                    key={key}
-                    onClick={() => chooseUpgrade(key)}
-                    className="border border-zinc-700 bg-zinc-950 p-4 text-left transition hover:border-orange-500 hover:bg-zinc-900"
-                  >
+                  <button key={key} onClick={() => chooseUpgrade(key)} className="border border-zinc-700 bg-zinc-950 p-4 text-left transition hover:border-orange-500 hover:bg-zinc-900">
                     <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">{upgrades[key].title}</p>
                     <p className="mt-2 text-xs text-zinc-400">{upgrades[key].description}</p>
                   </button>
