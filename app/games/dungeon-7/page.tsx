@@ -1,2 +1,3 @@
 import DungeonSeven from "../../../components/dungeon-seven";
-export default function DungeonSevenPage(){return <main className="min-h-screen bg-[#090909] p-4 text-[#f5f2ea] md:p-8"><div className="mx-auto max-w-6xl"><DungeonSeven/></div></main>}
+import GameShell from "../../../components/game-shell";
+export default function DungeonSevenPage(){return <GameShell chapter="CHAPTER 04" title="Dungeon 7."><p className="mb-5 max-w-xl text-sm leading-6 text-zinc-400">Five security waves stand between Mara and the source beneath the city.</p><DungeonSeven/></GameShell>}
