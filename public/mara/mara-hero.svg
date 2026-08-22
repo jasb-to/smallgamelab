@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" role="img" aria-labelledby="title desc">
+<title>Mara Vale, Courier 17</title><desc>Stylised original retro manga sci-fi courier hero.</desc>
+<defs><linearGradient id="j" x1="0" x2="1"><stop stop-color="#b63d26"/><stop offset="1" stop-color="#e27a36"/></linearGradient></defs>
+<g stroke="#171217" stroke-width="7" stroke-linejoin="round">
+<path fill="#171217" d="M53 53Q50 24 80 18Q111 15 122 42L113 74H55Z"/>
+<path fill="#c77e61" d="M61 51Q80 34 108 50L104 82Q83 96 61 77Z"/>
+<path fill="#f0d0b1" d="M69 59L76 56L80 62L72 67ZM94 59L101 56L105 62L97 67Z" stroke-width="3"/>
+<path fill="none" d="M79 75Q86 80 94 74" stroke-width="4"/>
+<path fill="url(#j)" d="M48 84Q80 73 113 88L135 145L110 166L93 132L86 183L49 183L55 127L31 151L20 137Z"/>
+<path fill="#202027" d="M50 105L35 137L20 137L39 91ZM112 92L135 145L119 155L101 116Z"/>
+<path fill="#303039" d="M48 183L86 183L91 207L62 207ZM91 183L111 166L126 207L98 207Z"/>
+<path fill="#e7c45f" d="M47 109L92 116L86 132L49 127Z" stroke-width="4"/>
+<path fill="#e7c45f" d="M98 99L111 103L108 111L95 107Z" stroke-width="4"/>
+</g></svg>
