@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type Enemy={id:number;x:number;hp:number;maxHp:number;kind:"grunt"|"runner"|"brute"};
+type Enemy={id:number;x:number;y:number;hp:number;maxHp:number;kind:"grunt"|"runner"|"brute"};
 type Shot={id:number;x:number;y:number;vx:number;vy:number};
 
 const W=1000,H=560;
@@ -10,9 +10,9 @@ const W=1000,H=560;
 export default function LastStandPolished(){
  const [started,setStarted]=useState(false),[hp,setHp]=useState(100),[ammo,setAmmo]=useState(12),[cash,setCash]=useState(120),[wave,setWave]=useState(1),[kills,setKills]=useState(0),[enemies,setEnemies]=useState<Enemy[]>([]),[shots,setShots]=useState<Shot[]>([]),[aim,setAim]=useState(0),[x,setX]=useState(180),[damage,setDamage]=useState(1),[upgrade,setUpgrade]=useState(false),[boss,setBoss]=useState(false);
  const keys=useRef(new Set<string>()); const id=useRef(1);
- const spawn=(w:number)=>{const isBoss=w%5===0;setBoss(isBoss);const n=isBoss?1:Math.min(4+w*2,18);setEnemies(Array.from({length:n},(_,i)=>{const kind=isBoss?"brute":(i%7===0&&w>2?"brute":i%5===0?"runner":"grunt");const max=isBoss?40:kind==="brute"?5:kind==="runner"?2:1;return{id:id.current++,x:W+80+i*55,hp:max,maxHp:max,kind}}));};
+ const spawn=(w:number)=>{const isBoss=w%5===0;setBoss(isBoss);const n=isBoss?1:Math.min(4+w*2,18);setEnemies(Array.from({length:n},(_,i)=>{const kind=isBoss?"brute":(i%7===0&&w>2?"brute":i%5===0?"runner":"grunt");const max=isBoss?40:kind==="brute"?5:kind==="runner"?2:1;return{id:id.current++,x:W+80+i*55,y:410,hp:max,maxHp:max,kind}}));};
  const start=()=>{setStarted(true);setHp(100);setAmmo(12);setCash(120);setWave(1);setKills(0);setDamage(1);setUpgrade(false);setShots([]);setX(180);spawn(1)};
- const fire=()=>{if(!started||upgrade||ammo<1)return;const a=aim;setAmmo(v=>v-1);setShots(s=>[...s,{id:id.current++,x:x+35,y:410,vx:24,vy:a,}]);};
+ const fire=()=>{if(!started||upgrade||ammo<1)return;const a=aim;setAmmo(v=>v-1);setShots(s=>[...s,{id:id.current++,x:x+35,y:410,vx:24,vy:a}]);};
  useEffect(()=>{const d=(e:KeyboardEvent)=>{keys.current.add(e.key.toLowerCase());if(e.code==="Space"){e.preventDefault();fire()}if(e.key.toLowerCase()==="r")setAmmo(12)};const u=(e:KeyboardEvent)=>keys.current.delete(e.key.toLowerCase());addEventListener("keydown",d);addEventListener("keyup",u);return()=>{removeEventListener("keydown",d);removeEventListener("keyup",u)}},[started,upgrade,ammo,aim,x]);
  useEffect(()=>{if(!started||upgrade)return;const t=setInterval(()=>setX(v=>Math.max(120,Math.min(260,v+(keys.current.has("a")||keys.current.has("arrowleft")?-4:keys.current.has("d")||keys.current.has("arrowright")?4:0)))),30);return()=>clearInterval(t)},[started,upgrade]);
  useEffect(()=>{if(!started||upgrade)return;const t=setInterval(()=>{setShots(s=>s.map(b=>({...b,x:b.x+b.vx,y:b.y+b.vy})).filter(b=>b.x<W));setEnemies(es=>es.map(e=>({...e,x:e.x-(e.kind==="runner"?1.7:e.kind==="brute"?.55:.9)})).filter(e=>{if(e.x<270){setHp(v=>Math.max(0,v-(e.kind==="brute"?15:6)));return false}return true}))},40);return()=>clearInterval(t)},[started,upgrade]);
