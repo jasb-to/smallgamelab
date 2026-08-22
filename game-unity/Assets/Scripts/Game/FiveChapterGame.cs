@@ -9,237 +9,46 @@ namespace SmallGameLab.TheLongRun
     public sealed class FiveChapterGame : MonoBehaviour
     {
         enum Mode { Runner, Survivor, Getaway, Dungeon, Final }
-        static readonly string[] Titles = { "THE DELIVERY", "ONE MORE ROOM", "THE GETAWAY", "DUNGEON 7", "THE FINAL RUN" };
-        static readonly string[] Locations = { "DISTRICT 7 ROOFTOPS", "RELAY 9 UNDERGROUND", "BLACKLINE PURSUIT", "THE WARDEN'S VAULT", "THE LAST CITY" };
-        static readonly Mode[] Modes = { Mode.Runner, Mode.Survivor, Mode.Getaway, Mode.Dungeon, Mode.Final };
+        static readonly string[] Titles={"THE DELIVERY","ONE MORE ROOM","THE GETAWAY","DUNGEON 7","THE FINAL RUN"};
+        static readonly string[] Locations={"DISTRICT 7 ROOFTOPS","RELAY 9 UNDERGROUND","BLACKLINE PURSUIT","THE WARDEN'S VAULT","THE LAST CITY"};
+        static readonly Mode[] Modes={Mode.Runner,Mode.Survivor,Mode.Getaway,Mode.Dungeon,Mode.Final};
+        readonly List<GameObject> world=new(); readonly List<GameObject> enemies=new(); readonly List<GameObject> bullets=new();
+        Transform mara,weapon; SpriteRenderer maraRenderer; Camera cam; Canvas canvas; Text header,hud,objective; GameObject overlay;
+        float elapsed,distance,spawnTimer,fireTimer,bossHp; int chapter,wave,hp,xp,score,kills,weaponLevel; bool playing,dead,complete,bossActive;
+        readonly Color orange=new(.95f,.27f,.12f),gold=new(1f,.68f,.22f),ink=new(.012f,.018f,.03f);
 
-        readonly List<GameObject> world = new();
-        readonly List<GameObject> enemies = new();
-        readonly List<GameObject> bullets = new();
-        Transform mara;
-        SpriteRenderer maraRenderer;
-        Transform weapon;
-        Camera cam;
-        Canvas canvas;
-        Text header, hud, objective;
-        GameObject overlay;
-        float elapsed, distance, spawnTimer, fireTimer, bossHp;
-        int chapter, wave, hp, xp, score, kills, weaponLevel;
-        bool playing, dead, complete, bossActive;
-        readonly Color orange = new Color(.95f,.27f,.12f);
-        readonly Color gold = new Color(1f,.68f,.22f);
-        readonly Color ink = new Color(.012f,.018f,.03f);
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void Boot()
-        {
-            if (FindFirstObjectByType<FiveChapterGame>() == null)
-                new GameObject("THE LONG RUN · FIVE CHAPTERS").AddComponent<FiveChapterGame>();
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)] static void Boot(){if(FindFirstObjectByType<FiveChapterGame>()==null)new GameObject("THE LONG RUN · FIVE CHAPTERS").AddComponent<FiveChapterGame>();}
+        void Start(){Application.targetFrameRate=60;BuildCamera();BuildUI();BuildMara();ShowChapter();}
+        Sprite Pixel(){return Sprite.Create(Texture2D.whiteTexture,new Rect(0,0,1,1),new Vector2(.5f,.5f));}
+        GameObject Box(string n,Vector2 p,Vector2 s,Color c,int o=0){var g=new GameObject(n);g.transform.position=p;g.transform.localScale=s;var r=g.AddComponent<SpriteRenderer>();r.sprite=Pixel();r.color=c;r.sortingOrder=o;world.Add(g);return g;}
+        void BuildCamera(){cam=new GameObject("Game Camera").AddComponent<Camera>();cam.orthographic=true;cam.orthographicSize=5.1f;cam.transform.position=new Vector3(0,0,-20);cam.backgroundColor=ink;}
+        void BuildWorld(){foreach(var g in world)if(g)Destroy(g);world.Clear();foreach(var g in enemies)if(g)Destroy(g);enemies.Clear();foreach(var g in bullets)if(g)Destroy(g);bullets.Clear();
+            Color bg=chapter switch{0=>new Color(.025f,.045f,.08f),1=>new Color(.018f,.025f,.04f),2=>new Color(.055f,.025f,.02f),3=>new Color(.035f,.018f,.055f),_=>new Color(.07f,.018f,.025f)};cam.backgroundColor=bg;
+            Box("Sky",new Vector2(12,2),new Vector2(70,14),new Color(bg.r+.025f,bg.g+.03f,bg.b+.04f),-30);
+            for(int i=-18;i<42;i++){float h=2f+Mathf.Abs(Mathf.Sin(i*2.71f))*5.5f;Color bc=chapter==3?new Color(.09f,.05f,.13f):new Color(.045f,.065f,.095f);Box("Building",new Vector2(i*2.15f,-2.25f+h*.5f),new Vector2(1.75f,h),bc,-15);for(int w=0;w<2;w++)for(int r=0;r<3;r++)if((i+w+r)%3!=0)Box("Window",new Vector2(i*2.15f-.38f+w*.72f,-1.2f+r*.75f),new Vector2(.13f,.2f),new Color(1f,.62f,.25f,.55f),-14);}
+            Box("Street",new Vector2(15,-3),new Vector2(70,.6f),new Color(.065f,.075f,.09f),2);Box("StreetGlow",new Vector2(15,-2.67f),new Vector2(70,.05f),orange,3);
+            for(int i=-8;i<42;i++){Box("Lamp",new Vector2(i*3.2f,-.7f),new Vector2(.06f,2.5f),new Color(.12f,.15f,.19f),4);Box("LampGlow",new Vector2(i*3.2f,.58f),new Vector2(.32f,.09f),orange,5);}
+            if(chapter==0||chapter==4)for(int i=0;i<14;i++)Box("Rooftop",new Vector2(4+i*3.8f,-1.75f+Mathf.Sin(i)*.55f),new Vector2(2.6f,.18f),new Color(.13f,.14f,.17f),6);
+            if(chapter==3)for(int i=0;i<12;i++){Box("VaultPillar",new Vector2(i*3-10,-.7f),new Vector2(.28f,4.4f),new Color(.12f,.06f,.17f),6);Box("EnergyCable",new Vector2(i*3-8.5f,2.15f),new Vector2(2.7f,.05f),new Color(.45f,.12f,.55f),7);}
         }
-
-        void Start()
-        {
-            Application.targetFrameRate = 60;
-            BuildCamera(); BuildUI(); BuildMara(); ShowChapter();
-        }
-
-        Sprite Pixel()
-        {
-            return Sprite.Create(Texture2D.whiteTexture, new Rect(0,0,1,1), new Vector2(.5f,.5f));
-        }
-
-        GameObject Box(string name, Vector2 pos, Vector2 size, Color color, int order = 0)
-        {
-            var go = new GameObject(name); go.transform.position = pos; go.transform.localScale = size;
-            var sr = go.AddComponent<SpriteRenderer>(); sr.sprite = Pixel(); sr.color = color; sr.sortingOrder = order;
-            world.Add(go); return go;
-        }
-
-        void BuildCamera()
-        {
-            cam = new GameObject("Game Camera").AddComponent<Camera>();
-            cam.orthographic = true; cam.orthographicSize = 5.1f;
-            cam.transform.position = new Vector3(0,0,-20); cam.backgroundColor = ink;
-        }
-
-        void BuildWorld()
-        {
-            foreach (var g in world) if (g) Destroy(g); world.Clear();
-            foreach (var g in enemies) if (g) Destroy(g); enemies.Clear();
-            foreach (var g in bullets) if (g) Destroy(g); bullets.Clear();
-
-            Color bg = chapter switch
-            {
-                0 => new Color(.025f,.045f,.08f),
-                1 => new Color(.018f,.025f,.04f),
-                2 => new Color(.055f,.025f,.02f),
-                3 => new Color(.035f,.018f,.055f),
-                _ => new Color(.07f,.018f,.025f)
-            };
-            cam.backgroundColor = bg;
-            Box("Sky", new Vector2(12,2), new Vector2(70,14), new Color(bg.r+.025f,bg.g+.03f,bg.b+.04f), -30);
-            for (int i=-18;i<42;i++)
-            {
-                float h=2f+Mathf.Abs(Mathf.Sin(i*2.71f))*5.5f;
-                Color building = chapter==3 ? new Color(.09f,.05f,.13f) : new Color(.045f,.065f,.095f);
-                Box("Building", new Vector2(i*2.15f,-2.25f+h*.5f), new Vector2(1.75f,h), building, -15);
-                for(int w=0;w<2;w++)
-                    for(int r=0;r<3;r++)
-                        if((i+w+r)%3!=0) Box("Window",new Vector2(i*2.15f-.38f+w*.72f,-1.2f+r*.75f),new Vector2(.13f,.2f),new Color(1f,.62f,.25f,.55f),-14);
-            }
-            Box("Street",new Vector2(15,-3),new Vector2(70,.6f),new Color(.065f,.075f,.09f),2);
-            Box("StreetGlow",new Vector2(15,-2.67f),new Vector2(70,.05f),orange,3);
-            for(int i=-8;i<42;i++)
-            {
-                Box("Lamp",new Vector2(i*3.2f,-.7f),new Vector2(.06f,2.5f),new Color(.12f,.15f,.19f),4);
-                Box("LampGlow",new Vector2(i*3.2f,.58f),new Vector2(.32f,.09f),orange,5);
-            }
-            if(chapter==0 || chapter==4)
-                for(int i=0;i<14;i++) Box("Rooftop",new Vector2(4+i*3.8f,-1.75f+Mathf.Sin(i)*.55f),new Vector2(2.6f,.18f),new Color(.13f,.14f,.17f),6);
-            if(chapter==3)
-                for(int i=0;i<12;i++) { Box("VaultPillar",new Vector2(i*3-10,-.7f),new Vector2(.28f,4.4f),new Color(.12f,.06f,.17f),6); Box("EnergyCable",new Vector2(i*3-8.5f,2.15f),new Vector2(2.7f,.05f),new Color(.45f,.12f,.55f),7); }
-        }
-
-        void BuildMara()
-        {
-            mara = new GameObject("Mara Vale · Courier 17").transform;
-            mara.position = new Vector3(-3,-1.35f,0);
-            maraRenderer = mara.gameObject.AddComponent<SpriteRenderer>();
-            maraRenderer.sprite = Resources.Load<Sprite>("Art/Mara/mara");
-            if (!maraRenderer.sprite) maraRenderer.sprite = Pixel();
-            maraRenderer.sortingOrder = 40; mara.localScale = Vector3.one*.5f;
-            weapon = new GameObject("Raven SMG").transform; weapon.SetParent(mara,false); weapon.localPosition=new Vector3(.72f,.02f,-.1f);
-            var wr=weapon.gameObject.AddComponent<SpriteRenderer>(); wr.sprite=Resources.Load<Sprite>("Art/Weapons/raven-smg"); if(!wr.sprite)wr.sprite=Pixel(); wr.sortingOrder=45; weapon.localScale=Vector3.one*.011f;
-        }
-
-        void BuildUI()
-        {
-            canvas=new GameObject("HUD").AddComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay;
-            var scaler=canvas.gameObject.AddComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1920,1080);
-            canvas.gameObject.AddComponent<GraphicRaycaster>();
-            if(!FindFirstObjectByType<EventSystem>()) new GameObject("EventSystem",typeof(EventSystem),typeof(InputSystemUIInputModule));
-            header=TextUI("Header",new Vector2(0,-30),new Vector2(1750,48),26,TextAnchor.MiddleLeft);
-            hud=TextUI("HUD",new Vector2(0,-74),new Vector2(1750,38),16,TextAnchor.MiddleLeft);
-            objective=TextUI("Objective",new Vector2(0,-112),new Vector2(1700,36),14,TextAnchor.MiddleCenter); objective.color=gold;
-        }
-
-        Text TextUI(string name,Vector2 pos,Vector2 size,int font,TextAnchor anchor)
-        {
-            var go=new GameObject(name); go.transform.SetParent(canvas.transform,false); var rt=go.AddComponent<RectTransform>();
-            rt.anchorMin=new Vector2(.5f,1);rt.anchorMax=new Vector2(.5f,1);rt.pivot=new Vector2(.5f,1);rt.anchoredPosition=pos;rt.sizeDelta=size;
-            var t=go.AddComponent<Text>();t.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");t.fontSize=font;t.fontStyle=FontStyle.Bold;t.alignment=anchor;t.raycastTarget=false;return t;
-        }
-
-        void ShowChapter()
-        {
-            playing=false; dead=false; complete=false; bossActive=false; BuildWorld();
-            header.text=$"CHAPTER {chapter+1:00}  //  {Titles[chapter]}"; objective.text=Locations[chapter];
-            string body=chapter switch
-            {
-                0=>"Mara takes an ordinary courier job across the rooftops. The package is not ordinary.",
-                1=>"The shard leads Mara below the city. Survive the complex and reach Relay 9.",
-                2=>"Blackline has eyes everywhere. Take the car, lose the heat and keep moving.",
-                3=>"The Warden controls the vault. Breach it, survive the room and take the truth.",
-                _=>"The shard has exposed the network. Mara has one final run to shut it down."
-            };
-            overlay=Panel("MARA VALE · COURIER 17",Titles[chapter],body,chapter==0?"START CHAPTER":"ENTER CHAPTER",StartChapter);
-        }
-
-        GameObject Panel(string kicker,string heading,string body,string button,UnityEngine.Events.UnityAction action)
-        {
-            var p=new GameObject("Overlay");p.transform.SetParent(canvas.transform,false);var rt=p.AddComponent<RectTransform>();
-            rt.anchorMin=new Vector2(.5f,.5f);rt.anchorMax=new Vector2(.5f,.5f);rt.pivot=new Vector2(.5f,.5f);rt.sizeDelta=new Vector2(900,450);
-            var bg=p.AddComponent<Image>();bg.color=new Color(.008f,.012f,.02f,.97f);
-            var k=TextChild(p,"Kicker",new Vector2(0,-48),new Vector2(800,32),12,TextAnchor.MiddleCenter);k.text=kicker.ToUpper();k.color=orange;
-            var h=TextChild(p,"Heading",new Vector2(0,-96),new Vector2(800,65),46,TextAnchor.MiddleCenter);h.text=heading;
-            var b=TextChild(p,"Body",new Vector2(0,-185),new Vector2(760,95),18,TextAnchor.MiddleCenter);b.text=body;b.color=new Color(.7f,.74f,.8f);
-            var go=new GameObject("Button");go.transform.SetParent(p.transform,false);var br=go.AddComponent<RectTransform>();br.anchorMin=new Vector2(.5f,0);br.anchorMax=new Vector2(.5f,0);br.pivot=new Vector2(.5f,0);br.anchoredPosition=new Vector2(0,50);br.sizeDelta=new Vector2(340,68);
-            var bi=go.AddComponent<Image>();bi.color=orange;var bu=go.AddComponent<Button>();bu.onClick.AddListener(action);var bt=TextChild(go,"Label",Vector2.zero,new Vector2(340,68),17,TextAnchor.MiddleCenter);bt.text=button;bt.color=Color.black;
-            return p;
-        }
-
-        Text TextChild(GameObject parent,string name,Vector2 pos,Vector2 size,int font,TextAnchor anchor)
-        { var t=TextUI(name,pos,size,font,anchor); t.transform.SetParent(parent.transform,false); return t; }
-
-        void StartChapter()
-        {
-            if(overlay)Destroy(overlay); playing=true; dead=false; complete=false; bossActive=false;
-            hp=100;xp=0;score=0;kills=0;wave=0;elapsed=0;distance=0;spawnTimer=.4f;fireTimer=.05f;bossHp=500;weaponLevel=1;
-            mara.position=new Vector3(-3,-1.35f,0); objective.text=Goal();
-        }
-
-        string Goal() => Modes[chapter] switch
-        {
-            Mode.Runner=>"REACH EXTRACTION · A/D OR ARROWS · SPACE JUMP · AUTO-FIRE",
-            Mode.Survivor=>"SURVIVE 6 WAVES · COLLECT SHARDS · UPGRADE WEAPON",
-            Mode.Getaway=>"LOSE THE HEAT · 2,000m · ENEMY CARS INCOMING",
-            Mode.Dungeon=>"BREACH THE VAULT · 28 TAKEDOWNS · DEFEAT THE WARDEN",
-            _=>"DEFEAT THE ARCHITECT · COMPLETE MARA'S RUN"
-        };
-
-        void Update()
-        {
-            if(!playing)return; float dt=Time.deltaTime; elapsed+=dt; distance+=dt*5.4f; InputStep(dt); Simulate(dt); CameraStep(dt); UpdateHUD();
-            if(dead){playing=false;overlay=Panel("RUN ENDED","MARA IS DOWN","The shard is still in Mara's hand. One more run.","RETRY",StartChapter);}
-            else if(complete){playing=false;if(chapter<4){chapter++;ShowChapter();}else overlay=Panel("THE LONG RUN","RUN COMPLETE","Five chapters. One courier. The story is only beginning.","PLAY AGAIN",()=>{chapter=0;ShowChapter();});}
-        }
-
-        void InputStep(float dt)
-        {
-            var kb=Keyboard.current;if(kb==null)return;float x=(kb.dKey.isPressed?1f:0f)-(kb.aKey.isPressed?1f:0f);
-            mara.position+=new Vector3(x*7f*dt,0,0);mara.position=new Vector3(Mathf.Clamp(mara.position.x,-7.3f,7.3f),mara.position.y,0);
-            if(kb.spaceKey.wasPressedThisFrame||kb.wKey.wasPressedThisFrame)mara.position+=Vector3.up*.75f;
-            if(kb.enterKey.wasPressedThisFrame||kb.eKey.wasPressedThisFrame)Fire();
-        }
-
-        void Simulate(float dt)
-        {
-            spawnTimer-=dt;fireTimer-=dt;if(fireTimer<=0){Fire();fireTimer=chapter==1?.16f:.22f;}
-            if(spawnTimer<=0){SpawnEnemy();spawnTimer=chapter==1?Mathf.Max(.32f,1.05f-wave*.07f):Mathf.Max(.42f,1.25f-time*.006f);}
-            MoveBullets(dt);MoveEnemies(dt);
-            if(Modes[chapter]==Mode.Runner&&distance>45)complete=true;
-            if(Modes[chapter]==Mode.Getaway&&distance>370)complete=true;
-            if(Modes[chapter]==Mode.Survivor&&wave>=6)complete=true;
-            if(Modes[chapter]==Mode.Dungeon&&kills>=28&&!bossActive){bossActive=true;SpawnBoss();}
-            if(Modes[chapter]==Mode.Final&&elapsed>10&&!bossActive){bossActive=true;SpawnBoss();}
-            if(bossActive&&bossHp<=0)complete=true;
-            if(chapter==1)wave=Mathf.Max(wave,Mathf.Min(6,kills/7));
-        }
-
-        void MoveBullets(float dt)
-        {
-            for(int i=bullets.Count-1;i>=0;i--){var b=bullets[i];if(!b){bullets.RemoveAt(i);continue;}b.transform.position+=Vector3.right*17f*dt;
-                bool hit=false;for(int e=enemies.Count-1;e>=0;e--){var target=enemies[e];if(!target)continue;float d=Vector2.Distance(b.transform.position,target.transform.position);if(d<1.15f){hit=true;float damage=target.name=="BOSS"?25f:35f;if(target.name=="BOSS")bossHp-=damage;else{kills++;xp+=10;score+=100;weaponLevel=1+kills/12;Destroy(target);enemies.RemoveAt(e);}Impact(b.transform.position);break;}}
-                if(hit||b.transform.position.x>15){Destroy(b);bullets.RemoveAt(i);}
-            }
-        }
-
-        void MoveEnemies(float dt)
-        {
-            for(int i=enemies.Count-1;i>=0;i--){var e=enemies[i];if(!e){enemies.RemoveAt(i);continue;}float speed=e.name=="BOSS"?.7f:(chapter==2?5f:2f);e.transform.position+=Vector3.left*speed*dt;
-                if(Vector2.Distance(e.transform.position,mara.position)<1f){hp-=e.name=="BOSS"?20:8;Destroy(e);enemies.RemoveAt(i);if(hp<=0){dead=true;return;}}
-                if(e.transform.position.x<-11){Destroy(e);enemies.RemoveAt(i);}
-            }
-        }
-
-        void Fire()
-        {
-            if(!playing)return;var g=new GameObject("Bullet");g.transform.position=mara.position+new Vector3(.9f,.08f,0);g.transform.localScale=new Vector3(1.1f+.2f*weaponLevel,.09f,1);
-            var r=g.AddComponent<SpriteRenderer>();r.sprite=Pixel();r.color=chapter==2?gold:orange;r.sortingOrder=50;bullets.Add(g);
-            for(int i=0;i<3;i++)Box("MuzzleFlash",mara.position+new Vector3(.85f+Random.value*.25f,Random.Range(-.1f,.1f),0),new Vector2(.22f,.06f),gold,51);
-        }
-
-        void SpawnEnemy()
-        {
-            if(chapter==2){var car=Box("Enemy Car",new Vector2(9,Random.Range(-1.8f,.9f)),new Vector2(2.2f,.8f),new Color(.62f,.07f,.09f),35);enemies.Add(car);Box("CarLight",car.transform.position+new Vector3(.85f,.1f,0),new Vector2(.12f,.18f),gold,36);return;}
-            Color c=chapter==3?new Color(.55f,.15f,.75f):chapter==4?new Color(.65f,.08f,.12f):new Color(.18f,.38f,.48f);
-            Vector2 size=chapter==3?new Vector2(1.15f,1.8f):chapter==4?new Vector2(1.45f,1.45f):new Vector2(.8f,.95f);
-            var e=Box("Enemy",new Vector2(9,Random.Range(-1.8f,1.5f)),size,c,35);enemies.Add(e);
-        }
-
-        void SpawnBoss(){var b=Box("BOSS",new Vector2(6,0),new Vector2(2.8f,3.1f),chapter==4?new Color(.72f,.08f,.12f):new Color(.45f,.18f,.65f),38);enemies.Add(b);}
+        void BuildMara(){mara=new GameObject("Mara Vale · Courier 17").transform;mara.position=new Vector3(-3,-1.35f,0);maraRenderer=mara.gameObject.AddComponent<SpriteRenderer>();maraRenderer.sprite=Resources.Load<Sprite>("Art/Mara/mara");if(!maraRenderer.sprite)maraRenderer.sprite=Pixel();maraRenderer.sortingOrder=40;mara.localScale=Vector3.one*.5f;weapon=new GameObject("Raven SMG").transform;weapon.SetParent(mara,false);weapon.localPosition=new Vector3(.72f,.02f,-.1f);var wr=weapon.gameObject.AddComponent<SpriteRenderer>();wr.sprite=Resources.Load<Sprite>("Art/Weapons/raven-smg");if(!wr.sprite)wr.sprite=Pixel();wr.sortingOrder=45;weapon.localScale=Vector3.one*.011f;}
+        void BuildUI(){canvas=new GameObject("HUD").AddComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;var s=canvas.gameObject.AddComponent<CanvasScaler>();s.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;s.referenceResolution=new Vector2(1920,1080);canvas.gameObject.AddComponent<GraphicRaycaster>();if(!FindFirstObjectByType<EventSystem>())new GameObject("EventSystem",typeof(EventSystem),typeof(InputSystemUIInputModule));header=TextUI("Header",new Vector2(0,-30),new Vector2(1750,48),26,TextAnchor.MiddleLeft);hud=TextUI("HUD",new Vector2(0,-74),new Vector2(1750,38),16,TextAnchor.MiddleLeft);objective=TextUI("Objective",new Vector2(0,-112),new Vector2(1700,36),14,TextAnchor.MiddleCenter);objective.color=gold;}
+        Text TextUI(string n,Vector2 p,Vector2 s,int fs,TextAnchor a){var g=new GameObject(n);g.transform.SetParent(canvas.transform,false);var r=g.AddComponent<RectTransform>();r.anchorMin=new Vector2(.5f,1);r.anchorMax=new Vector2(.5f,1);r.pivot=new Vector2(.5f,1);r.anchoredPosition=p;r.sizeDelta=s;var t=g.AddComponent<Text>();t.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");t.fontSize=fs;t.fontStyle=FontStyle.Bold;t.alignment=a;t.raycastTarget=false;return t;}
+        Text ChildText(GameObject parent,string n,Vector2 p,Vector2 s,int fs,TextAnchor a){var t=TextUI(n,p,s,fs,a);t.transform.SetParent(parent.transform,false);return t;}
+        void ShowChapter(){playing=false;dead=false;complete=false;bossActive=false;BuildWorld();header.text=$"CHAPTER {chapter+1:00}  //  {Titles[chapter]}";objective.text=Locations[chapter];string body=chapter switch{0=>"Mara takes an ordinary courier job across the rooftops. The package is not ordinary.",1=>"The shard leads Mara below the city. Survive the complex and reach Relay 9.",2=>"Blackline has eyes everywhere. Take the car, lose the heat and keep moving.",3=>"The Warden controls the vault. Breach it, survive the room and take the truth.",_=>"The shard has exposed the network. Mara has one final run to shut it down."};overlay=Panel("MARA VALE · COURIER 17",Titles[chapter],body,chapter==0?"START CHAPTER":"ENTER CHAPTER",StartChapter);}
+        GameObject Panel(string kicker,string heading,string body,string button,UnityEngine.Events.UnityAction action){var p=new GameObject("Overlay");p.transform.SetParent(canvas.transform,false);var r=p.AddComponent<RectTransform>();r.anchorMin=new Vector2(.5f,.5f);r.anchorMax=new Vector2(.5f,.5f);r.pivot=new Vector2(.5f,.5f);r.sizeDelta=new Vector2(900,450);var bg=p.AddComponent<Image>();bg.color=new Color(.008f,.012f,.02f,.97f);var k=ChildText(p,"Kicker",new Vector2(0,-48),new Vector2(800,32),12,TextAnchor.MiddleCenter);k.text=kicker.ToUpper();k.color=orange;var h=ChildText(p,"Heading",new Vector2(0,-96),new Vector2(800,65),46,TextAnchor.MiddleCenter);h.text=heading;var b=ChildText(p,"Body",new Vector2(0,-185),new Vector2(760,95),18,TextAnchor.MiddleCenter);b.text=body;b.color=new Color(.7f,.74f,.8f);var go=new GameObject("Button");go.transform.SetParent(p.transform,false);var br=go.AddComponent<RectTransform>();br.anchorMin=new Vector2(.5f,0);br.anchorMax=new Vector2(.5f,0);br.pivot=new Vector2(.5f,0);br.anchoredPosition=new Vector2(0,50);br.sizeDelta=new Vector2(340,68);var bi=go.AddComponent<Image>();bi.color=orange;var bu=go.AddComponent<Button>();bu.onClick.AddListener(action);var bt=ChildText(go,"Label",Vector2.zero,new Vector2(340,68),17,TextAnchor.MiddleCenter);bt.text=button;bt.color=Color.black;return p;}
+        void StartChapter(){if(overlay)Destroy(overlay);playing=true;dead=false;complete=false;bossActive=false;hp=100;xp=0;score=0;kills=0;wave=0;elapsed=0;distance=0;spawnTimer=.4f;fireTimer=.05f;bossHp=500;weaponLevel=1;mara.position=new Vector3(-3,-1.35f,0);objective.text=Goal();}
+        string Goal()=>Modes[chapter] switch{Mode.Runner=>"REACH EXTRACTION · A/D OR ARROWS · SPACE JUMP · AUTO-FIRE",Mode.Survivor=>"SURVIVE 6 WAVES · COLLECT SHARDS · UPGRADE WEAPON",Mode.Getaway=>"LOSE THE HEAT · 2,000m · ENEMY CARS INCOMING",Mode.Dungeon=>"BREACH THE VAULT · 28 TAKEDOWNS · DEFEAT THE WARDEN",_=>"DEFEAT THE ARCHITECT · COMPLETE MARA'S RUN"};
+        void Update(){if(!playing)return;float dt=Time.deltaTime;elapsed+=dt;distance+=dt*5.4f;InputStep(dt);Simulate(dt);CameraStep(dt);UpdateHUD();if(dead){playing=false;overlay=Panel("RUN ENDED","MARA IS DOWN","The shard is still in Mara's hand. One more run.","RETRY",StartChapter);}else if(complete){playing=false;if(chapter<4){chapter++;ShowChapter();}else overlay=Panel("THE LONG RUN","RUN COMPLETE","Five chapters. One courier. The story is only beginning.","PLAY AGAIN",()=>{chapter=0;ShowChapter();});}}
+        void InputStep(float dt){var kb=Keyboard.current;if(kb==null)return;float x=(kb.dKey.isPressed?1f:0f)-(kb.aKey.isPressed?1f:0f);mara.position+=new Vector3(x*7f*dt,0,0);mara.position=new Vector3(Mathf.Clamp(mara.position.x,-7.3f,7.3f),Mathf.Clamp(mara.position.y,-2f,2f),0);if(kb.spaceKey.wasPressedThisFrame||kb.wKey.wasPressedThisFrame)mara.position+=Vector3.up*.75f;if(kb.enterKey.wasPressedThisFrame||kb.eKey.wasPressedThisFrame)Fire();}
+        void Simulate(float dt){spawnTimer-=dt;fireTimer-=dt;if(fireTimer<=0){Fire();fireTimer=chapter==1?.16f:.22f;}if(spawnTimer<=0){SpawnEnemy();spawnTimer=chapter==1?Mathf.Max(.32f,1.05f-wave*.07f):Mathf.Max(.42f,1.25f-time*.006f);}MoveBullets(dt);MoveEnemies(dt);if(Modes[chapter]==Mode.Runner&&distance>45)complete=true;if(Modes[chapter]==Mode.Getaway&&distance>370)complete=true;if(Modes[chapter]==Mode.Survivor&&wave>=6)complete=true;if(Modes[chapter]==Mode.Dungeon&&kills>=28&&!bossActive){bossActive=true;SpawnBoss();}if(Modes[chapter]==Mode.Final&&elapsed>10&&!bossActive){bossActive=true;SpawnBoss();}if(bossActive&&bossHp<=0)complete=true;if(chapter==1)wave=Mathf.Max(wave,Mathf.Min(6,kills/7));}
+        void MoveBullets(float dt){for(int i=bullets.Count-1;i>=0;i--){var b=bullets[i];if(!b){bullets.RemoveAt(i);continue;}b.transform.position+=Vector3.right*17f*dt;bool hit=false;for(int e=enemies.Count-1;e>=0;e--){var t=enemies[e];if(!t)continue;if(Vector2.Distance(b.transform.position,t.transform.position)<1.15f){hit=true;if(t.name=="BOSS")bossHp-=25;else{kills++;xp+=10;score+=100;weaponLevel=1+kills/12;Destroy(t);enemies.RemoveAt(e);}Impact(b.transform.position);break;}}if(hit||b.transform.position.x>15){Destroy(b);bullets.RemoveAt(i);}}}
+        void MoveEnemies(float dt){for(int i=enemies.Count-1;i>=0;i--){var e=enemies[i];if(!e){enemies.RemoveAt(i);continue;}float speed=e.name=="BOSS"?.7f:(chapter==2?5f:2f);e.transform.position+=Vector3.left*speed*dt;if(Vector2.Distance(e.transform.position,mara.position)<1f){hp-=e.name=="BOSS"?20:8;Destroy(e);enemies.RemoveAt(i);if(hp<=0){dead=true;return;}}if(e.transform.position.x<-11){Destroy(e);enemies.RemoveAt(i);}}}
+        void Fire(){if(!playing)return;var g=new GameObject("Bullet");g.transform.position=mara.position+new Vector3(.9f,.08f,0);g.transform.localScale=new Vector3(1.1f+.2f*weaponLevel,.09f,1);var r=g.AddComponent<SpriteRenderer>();r.sprite=Pixel();r.color=chapter==2?gold:orange;r.sortingOrder=50;bullets.Add(g);for(int i=0;i<3;i++)Box("MuzzleFlash",mara.position+new Vector3(.85f+Random.value*.25f,Random.Range(-.1f,.1f),0),new Vector2(.22f,.06f),gold,51);}
+        void SpawnEnemy(){if(chapter==2){var car=Box("Enemy Car",new Vector2(9,Random.Range(-1.8f,.9f)),new Vector2(2.2f,.8f),new Color(.62f,.07f,.09f),35);enemies.Add(car);Box("CarLight",car.transform.position+new Vector3(.85f,.1f,0),new Vector2(.12f,.18f),gold,36);return;}Color c=chapter==3?new Color(.55f,.15f,.75f):chapter==4?new Color(.65f,.08f,.12f):new Color(.18f,.38f,.48f);Vector2 size=chapter==3?new Vector2(1.15f,1.8f):chapter==4?new Vector2(1.45f,1.45f):new Vector2(.8f,.95f);enemies.Add(Box("Enemy",new Vector2(9,Random.Range(-1.8f,1.5f)),size,c,35));}
+        void SpawnBoss(){enemies.Add(Box("BOSS",new Vector2(6,0),new Vector2(2.8f,3.1f),chapter==4?new Color(.72f,.08f,.12f):new Color(.45f,.18f,.65f),38));}
         void Impact(Vector2 p){for(int i=0;i<6;i++)Box("Impact",p+Random.insideUnitCircle*.18f,new Vector2(.08f,.08f),gold,52);}
-        void CameraStep(float dt){if(cam)mara.position=new Vector3(Mathf.Clamp(mara.position.x,-7.3f,7.3f),Mathf.Clamp(mara.position.y,-2f,2f),0);cam.transform.position=Vector3.Lerp(cam.transform.position,new Vector3(mara.position.x+2.5f,0,-20),dt*4f);}
+        void CameraStep(float dt){if(!cam)return;cam.transform.position=Vector3.Lerp(cam.transform.position,new Vector3(mara.position.x+2.5f,0,-20),dt*4f);}
         void UpdateHUD(){header.text=$"CHAPTER {chapter+1:00}  //  {Titles[chapter]}";hud.text=$"MARA ♥ {Mathf.Max(0,hp)}    XP {xp}    KILLS {kills}    SCORE {score}    WEAPON {weaponLevel}"+(chapter==1?$"    WAVE {Mathf.Min(6,wave)}/6":"");objective.text=Goal();}
     }
 }
