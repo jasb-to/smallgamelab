@@ -12,7 +12,7 @@ export default function Home() {
       <p className="mb-6 text-xs font-bold uppercase tracking-[0.3em] text-orange-500">Independent game studio · London</p>
       <h1 className="max-w-5xl text-6xl font-black leading-[0.88] tracking-[-0.06em] sm:text-8xl lg:text-[10rem]">SMALL<br/>GAMES.<br/><span className="text-orange-500">BIG</span><br/>DISTRIBUTION.</h1>
       <div className="mt-12 flex flex-col gap-6 sm:flex-row sm:items-center">
-        <Link href="/games/last-stand" className="inline-flex w-fit items-center bg-orange-500 px-7 py-4 text-sm font-black uppercase tracking-wider text-black hover:bg-orange-400">Play Game 001 →</Link>
+        <Link href="/campaign" className="inline-flex w-fit items-center bg-orange-500 px-7 py-4 text-sm font-black uppercase tracking-wider text-black hover:bg-orange-400">Play The Long Run →</Link>
         <p className="max-w-md text-sm leading-6 text-zinc-500">Tiny teams. Simple ideas. Obsessive execution. We build games people understand in seconds and remember for years.</p>
       </div>
     </section>
